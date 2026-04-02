@@ -7,6 +7,20 @@ Implements:
   model_confidence_set : Hansen, Lunde & Nason (2011) MCS procedure
   run_backtest         : orchestrates the full backtest pipeline on a model suite
 
+Statistical Background
+----------------------
+A correctly specified VaR model at level α must satisfy two properties:
+  1. Unconditional correctness : E[I_t] = α
+  2. Conditional correctness   : E[I_t | F_{t-1}] = α  (violations are unpredictable)
+
+where I_t = 1{r_t < -VaR_t} is the daily hit/violation indicator.
+
+The Christoffersen (1998) framework tests both simultaneously via nested LR tests
+on the first-order Markov structure of {I_t}. The Model Confidence Set then
+formally ranks surviving models by their tick-loss performance, providing a
+statistically rigorous answer to "which model is best" rather than a binary
+pass/fail verdict.
+
 References
 ----------
 Christoffersen, P. (1998). Evaluating interval forecasts.
@@ -15,6 +29,9 @@ McNeil, A. J., & Frey, R. (2000). Estimation of tail-related risk measures for
     heteroscedastic financial time series. Journal of Empirical Finance, 7(3-4), 271–300.
 Hansen, P. R., Lunde, A., & Nason, J. M. (2011). The model confidence set.
     Econometrica, 79(2), 453–497.
+Newey, W. K., & West, K. D. (1987). A simple, positive semi-definite,
+    heteroskedasticity and autocorrelation consistent covariance matrix.
+    Econometrica, 55(3), 703–708.
 """
 
 import numpy as np
@@ -66,9 +83,27 @@ def christoffersen_test(
     Runs three nested likelihood-ratio tests on the hit sequence
     I_t = 1{r_t < −VaR_t}:
 
-      POF  (Kupiec 1995) : unconditional coverage     chi²(1)
-      IND  (CC 1998)     : serial independence         chi²(1)
-      CC                 : conditional coverage (joint) chi²(2)
+      POF  (Kupiec 1995) : H0: π̂ = α  (unconditional coverage)     chi²(1)
+      IND               : H0: π01 = π11 (serial independence)         chi²(1)
+      CC                : joint conditional coverage                  chi²(2)
+
+    **POF statistic:**
+      LR_POF = −2 [n1·ln(α/π̂) + n0·ln((1−α)/(1−π̂))]
+      where n1 = Σ I_t, n0 = T − n1, π̂ = n1/T.
+
+    **IND statistic** (first-order Markov transition probabilities):
+      π̂_ij = n_ij / Σ_j n_ij  (empirical transition rates)
+      LR_IND = −2 [ℓ(π̂) − ℓ(π̂01, π̂11)]
+      ℓ(π̂)         = (n00+n10)·ln(1−π̂) + (n01+n11)·ln(π̂)
+      ℓ(π̂01, π̂11) = n00·ln(1−π̂01) + n01·ln(π̂01)
+                      + n10·ln(1−π̂11) + n11·ln(π̂11)
+
+    **CC statistic:**
+      LR_CC = LR_POF + LR_IND  ~  chi²(2)
+
+    Note: All models studied here fail the IND test (p < 0.01), indicating
+    persistent violation clustering. This is a systemic property of single-regime
+    GARCH, not a model-specific defect — see README §Research Contribution.
 
     Parameters
     ----------
@@ -155,10 +190,21 @@ def mcneil_frey_es_test(
     """McNeil & Frey (2000) test for correct ES specification.
 
     On VaR exceedance days (r_t < −VaR_t), tests whether the ES is correctly
-    specified via H₀: E[−r_t − ES_t | exceed] = 0 (one-sample t-test on
-    exceedance residuals).
+    specified via H₀: E[−r_t − ES_t | exceed] = 0.
 
-    A positive t-statistic indicates the model underestimates tail losses.
+    Exceedance residuals: e_t = −r_t − ES_t  on days where r_t < −VaR_t.
+    Under correct specification: E[e_t] = 0.
+    Test statistic: t = ē / (s_e / √n_exceed)  ~  t(n_exceed − 1).
+
+    **Interpretation of t-statistic sign:**
+      t > 0  :  actual losses exceed ES forecasts  → model underestimates tail risk
+      t < 0  :  ES forecasts exceed actual losses   → model is conservative (overstates risk)
+
+    For GARCH-t, the parametric ES has the closed form:
+      ES_t = σ_{t+1|t} · [f_ν(t_ν^{-1}(α)) / α] · (ν + (t_ν^{-1}(α))²) / (ν − 1)
+    where f_ν and t_ν^{-1} are the Student-t pdf and quantile function (df = ν).
+    This exceeds the normal ES by ~30% for ν=5, explaining why GARCH-t passes
+    this test while GARCH-N does not.
 
     Parameters
     ----------
@@ -204,13 +250,27 @@ def model_confidence_set(
 ) -> pd.DataFrame:
     """Model Confidence Set (Hansen, Lunde & Nason 2011).
 
-    Starting from the full model set, iteratively eliminates the worst model
-    using a bootstrap-calibrated t-bar statistic until the null of equal
-    predictive ability across surviving models cannot be rejected at level
-    ``alpha``.
+    Constructs the smallest set M* of models such that:
+      P(best model ∈ M*) ≥ 1 − α.
 
-    Loss function: tick (quantile) loss — a proper scoring rule for quantile
-    forecasts, directly aligned with VaR evaluation.
+    This is strictly stronger than a backtest pass/fail: models in M* are
+    statistically indistinguishable in predictive ability; models outside M*
+    are *formally inferior*.
+
+    **Algorithm:**
+      1. Compute relative loss: d_{i,t} = L_{i,t} − L̄_t  (deviation from cross-sectional mean)
+      2. t-bar statistic for model i:
+           t̄_i = d̄_i / (ω̂_i / √T)
+         where d̄_i = mean(d_{i,t}),  ω̂_i² = Newey-West variance (lag = T^(1/3))
+      3. Test statistic: T_M = max_i t̄_i
+      4. Bootstrap p-value: resample rows of L, re-center, compute T_boot^(b)
+           p = #{T_boot^(b) ≥ T_obs} / B
+      5. If p ≤ α: eliminate argmax_i t̄_i and repeat.
+         If p > α: stop — remaining models form the MCS.
+
+    **Loss function:** Tick (quantile) loss L_t = (I_t − α)(r_t + VaR_t).
+    This is the unique proper scoring rule for the α-quantile (Gneiting & Raftery 2007),
+    ensuring that a correctly specified model minimises expected loss.
 
     Parameters
     ----------
