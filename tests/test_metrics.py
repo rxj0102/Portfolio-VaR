@@ -18,6 +18,7 @@ from metrics import (
     mcneil_frey_es_test,
     model_confidence_set,
     run_backtest,
+    _tick_loss,
 )
 
 # ── Shared fixtures ───────────────────────────────────────────────────────────
@@ -165,6 +166,32 @@ class TestModelConfidenceSet:
         result = model_confidence_set(ldf, B=50)
         assert result.loc["m1", "in_MCS"] == "★"
         assert result.loc["m2", "in_MCS"] == "★"
+
+    def test_mcs_with_tick_loss_retains_good_model(self):
+        """MCS fed with tick losses from _tick_loss must retain the well-calibrated model.
+
+        Regression test for sign-convention bug: tick loss is always non-negative and
+        lower = better, so the model with fewer violations should survive elimination.
+        """
+        rng = np.random.default_rng(99)
+        T = 1200
+        r = rng.normal(0, 0.01, T)
+        # Well-calibrated: ~1 % violation rate at 99 % VaR
+        var_good = np.full(T, np.quantile(-r, 0.99))
+        # Badly calibrated: VaR far too low → many violations
+        var_bad = np.full(T, np.quantile(-r, 0.60))
+
+        ldf = pd.DataFrame({
+            "good": _tick_loss(r, var_good, alpha=0.01),
+            "bad":  _tick_loss(r, var_bad,  alpha=0.01),
+        })
+        # Tick loss must be non-negative
+        assert (ldf >= 0).all().all(), "Tick losses must be non-negative"
+        # Good model must have strictly lower mean tick loss
+        assert ldf["good"].mean() < ldf["bad"].mean()
+        # MCS must retain the good model
+        result = model_confidence_set(ldf, B=200, seed=7)
+        assert result.loc["good", "in_MCS"] == "★", "MCS must retain the well-calibrated model"
 
 
 # ── run_backtest ──────────────────────────────────────────────────────────────

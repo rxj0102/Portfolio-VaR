@@ -62,13 +62,13 @@ def _newey_west_var(x: np.ndarray, lag: int) -> float:
 def _tick_loss(returns: np.ndarray, var: np.ndarray, alpha: float) -> np.ndarray:
     """Tick (quantile) loss for VaR evaluation.
 
-    L_t = (I_t − alpha) * (r_t + VaR_t),  I_t = 1{r_t < −VaR_t}
+    L_t = (alpha − I_t) * (r_t + VaR_t),  I_t = 1{r_t < −VaR_t}
 
     A proper scoring rule for the alpha-quantile; used internally by
     model_confidence_set and run_backtest.
     """
     hit = (returns < -var).astype(float)
-    return (hit - alpha) * (returns + var)
+    return (alpha - hit) * (returns + var)
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -268,7 +268,7 @@ def model_confidence_set(
       5. If p ≤ α: eliminate argmax_i t̄_i and repeat.
          If p > α: stop — remaining models form the MCS.
 
-    **Loss function:** Tick (quantile) loss L_t = (I_t − α)(r_t + VaR_t).
+    **Loss function:** Tick (quantile) loss L_t = (α − I_t)(r_t + VaR_t).
     This is the unique proper scoring rule for the α-quantile (Gneiting & Raftery 2007),
     ensuring that a correctly specified model minimises expected loss.
 
@@ -310,7 +310,7 @@ def model_confidence_set(
             L_b = L[idx_b]
             D_b = L_b - L_b.mean(axis=1, keepdims=True)
             mu_b = D_b.mean(axis=0) - mu_D          # re-center at observed mean
-            var_b = np.maximum(D_b.var(axis=0, ddof=1), 1e-12)
+            var_b = np.array([_newey_west_var(D_b[:, i], lags) for i in range(n_m)])
             T_boot[b] = (mu_b / np.sqrt(var_b / T)).max()
 
         p_val = float((T_boot >= T_obs).mean())
@@ -363,7 +363,7 @@ def run_backtest(
         p_pof = res["p_POF"]
         p_cc = res["p_CC"]
         if np.isfinite(p_pof) and p_pof > 0.05:
-            status = "CC ✓" if (np.isfinite(p_cc) and p_cc > 0.05) else "POF ✓"
+            status = "CC ✓" if (np.isfinite(p_cc) and p_cc > 0.05) else "IND ✗"
         else:
             status = "FAIL"
 
