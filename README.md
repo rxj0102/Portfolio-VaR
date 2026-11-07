@@ -2,15 +2,17 @@
 
 > A comparative study of 13 VaR models — GARCH family, Filtered Historical Simulation, and EVT/GPD hybrids — evaluated under the Christoffersen (1998) conditional coverage framework and the Hansen–Lunde–Nason (2011) Model Confidence Set, across 4,800 trading days and three major stress regimes.
 
+> **Correction (Nov 2026).** The original GARCH VaR and ES numbers contained two bugs, fixed in `src/garch_var.py` and the notebook: (1) `arch`'s Student-t is *standardised* (unit variance) but the raw Student-t quantile was used, overstating GARCH-t VaR by ~29% at nu = 5 (this, not better tail modelling, is why GARCH-t looked over-conservative and "passed" the ES test); (2) `conditional_volatility` was lagged one extra day, so VaR used a stale forecast and violations clustered artificially. The Key Results table below is regenerated from the corrected notebook; the sub-period, Component VaR and MS-GARCH sections predate the fix and have not been re-run.
+
 ---
 
 ## Research Contribution
 
 This study makes three concrete empirical contributions:
 
-1. **Formal model ranking via proper scoring rules.** Beyond a binary pass/fail backtest, surviving models are ranked by the Model Confidence Set (HLN 2011) using tick loss — a proper scoring rule for quantile forecasts. GJR-GARCH-t, GARCH-t, and FIGARCH-t form the 90% MCS; all normal-distribution variants are eliminated.
+1. **Formal model ranking via proper scoring rules.** Beyond a binary pass/fail backtest, models are compared by the Model Confidence Set (HLN 2011) using tick loss, a proper scoring rule for quantile forecasts. After the correction the 90% MCS is wide (12 of 13 models): tick-loss differences between reasonable VaR models are small relative to sampling noise, so the MCS cannot separate them.
 
-2. **IND test failures are a signal, not noise.** Every model — including EVT hybrids — fails the Christoffersen independence test. This systematic violation clustering is not a model-specific defect but an empirical signature of latent regime transitions absent from single-state GARCH. The finding directly motivates a Markov Regime-Switching GARCH extension.
+2. **Violation clustering remains the main weakness.** After the correction the Student-t GARCH variants still under-cover (1.2-1.4% vs 1% target) and most models fail the Christoffersen independence test, with the normal GARCH variants the exception (p_IND 0.05-0.10). Only the EVT hybrids hit the 1% target, and they still cluster. Whether regime switching would fix this is an open question that motivates, but does not by itself establish, the MS-GARCH extension below.
 
 3. **Correlation collapse drives 89% of crisis VaR widening.** Static delta-normal Component VaR underestimates crisis-period risk because it ignores the correlation regime shift. Comparing unconditional vs. GFC-period covariance matrices shows that portfolio VaR widens from 2.00% to 3.78% (+89%) primarily due to inter-asset correlation increases, not marginal volatility alone — quantified explicitly via rolling Component VaR attribution.
 
@@ -155,19 +157,23 @@ where $\hat{\omega}_i^2$ is the Newey-West HAC variance of $\{d_{i,t}\}$. Bootst
 
 ### Full-Sample Backtest (4,811 days, expected violations: 48.1)
 
-| Model | Violations | Rate | p_POF | p_IND | p_CC | MCS |
-|-------|-----------|------|-------|-------|------|-----|
-| **GJR-GARCH-t** | **41** | **0.85%** | **0.291** | 0.000 | 0.001 | **★** |
-| **GARCH-t** | **38** | **0.79%** | **0.128** | 0.000 | 0.000 | **★** |
-| **FIGARCH-t** | **38** | **0.79%** | **0.128** | 0.003 | 0.004 | **★** |
-| APARCH-EVT | 48 | 1.00% | 0.987 | 0.001 | 0.005 | |
-| FHS-EVT | 47 | 0.98% | 0.872 | 0.001 | 0.005 | |
-| FHS-APARCH | 55 | 1.14% | 0.323 | 0.000 | 0.000 | |
-| HS | 62 | 1.29% | 0.010 | 0.143 | 0.014 | |
-| GARCH-N | 83 | 1.73% | 0.000 | 0.072 | 0.000 | |
-| GJR-GARCH-N | 85 | 1.77% | 0.000 | 0.084 | 0.000 | |
+| Model | Violations | Rate | p_POF | p_IND | p_CC |
+|-------|-----------|------|-------|-------|------|
+| APARCH-EVT | 48 | 1.00% | 0.987 | 0.001 | 0.005 |
+| FHS-EVT | 47 | 0.98% | 0.872 | 0.001 | 0.005 |
+| FIGARCH-t | 59 | 1.23% | 0.128 | 0.006 | 0.007 |
+| FHS | 62 | 1.29% | 0.054 | 0.009 | 0.005 |
+| GJR-GARCH-t | 63 | 1.31% | 0.039 | 0.060 | 0.020 |
+| FHS-APARCH | 63 | 1.31% | 0.039 | 0.010 | 0.004 |
+| GARCH-t | 65 | 1.35% | 0.020 | 0.013 | 0.003 |
+| FHS-EWMA | 65 | 1.35% | 0.020 | 0.013 | 0.003 |
+| EGARCH-t | 67 | 1.39% | 0.010 | 0.016 | 0.002 |
+| HS | 69 | 1.43% | 0.005 | 0.000 | 0.000 |
+| GARCH-N | 81 | 1.68% | 0.000 | 0.061 | 0.000 |
+| FIGARCH-N | 83 | 1.73% | 0.000 | 0.072 | 0.000 |
+| GJR-GARCH-N | 87 | 1.81% | 0.000 | 0.097 | 0.000 |
 
-> All models fail the IND test. This is the study's most consequential finding (see Research Contributions §2 and Proposed Extensions §1).
+> Most models fail the independence test (the normal GARCH variants and GJR-GARCH-t are borderline). McNeil-Frey ES test: GJR-GARCH-t rejected (p = 0.049); GARCH-t, FIGARCH-t and EGARCH-t not rejected (p = 0.10, 0.09, 0.22), i.e. the t-GARCH ES forecasts are underestimating tail losses (all t-statistics positive).
 
 ### Sub-Period Stress Analysis
 
@@ -200,7 +206,7 @@ GLD's diversification benefit collapses during GFC (gold–equity correlations t
 
 ### 1. Markov Regime-Switching GARCH (MS-GARCH)
 
-**Motivation:** The universal IND test failure is the study's clearest finding. Violation clustering appears in all 13 models, indicating the data-generating process has at least two volatility regimes that single-state GARCH cannot span.
+**Motivation:** Violation clustering (IND test failures) appears in most of the 13 models, indicating the data-generating process has at least two volatility regimes that single-state GARCH cannot span.
 
 **Methodology:**
 - Two-state MS-GARCH (Haas, Mittnik & Paolella 2004): calm state $S_1$ with GARCH-t, stress state $S_2$ with GJR-GARCH-t
