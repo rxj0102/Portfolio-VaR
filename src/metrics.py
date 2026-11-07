@@ -101,9 +101,8 @@ def christoffersen_test(
     **CC statistic:**
       LR_CC = LR_POF + LR_IND  ~  chi²(2)
 
-    Note: All models studied here fail the IND test (p < 0.01), indicating
-    persistent violation clustering. This is a systemic property of single-regime
-    GARCH, not a model-specific defect — see README §Research Contribution.
+    Note: violation clustering (a low IND p-value) is common for single-regime
+    GARCH models; see README §Research Contribution for the corrected results.
 
     Parameters
     ----------
@@ -203,8 +202,9 @@ def mcneil_frey_es_test(
     For GARCH-t, the parametric ES has the closed form:
       ES_t = σ_{t+1|t} · [f_ν(t_ν^{-1}(α)) / α] · (ν + (t_ν^{-1}(α))²) / (ν − 1)
     where f_ν and t_ν^{-1} are the Student-t pdf and quantile function (df = ν).
-    This exceeds the normal ES by ~30% for ν=5, explaining why GARCH-t passes
-    this test while GARCH-N does not.
+    Here σ is the *standard deviation* of a unit-variance (standardised) t, so
+    the quantile and ES above carry an extra factor sqrt((ν−2)/ν); see
+    ``garch_var.var_es_multipliers``.
 
     Parameters
     ----------
