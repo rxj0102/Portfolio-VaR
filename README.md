@@ -1,5 +1,7 @@
 # Portfolio Value-at-Risk: A 20-Year Model Tournament on a Multi-Asset ETF Portfolio
 
+[![CI](https://github.com/rxj0102/Portfolio-VaR/actions/workflows/ci.yml/badge.svg)](https://github.com/rxj0102/Portfolio-VaR/actions/workflows/ci.yml)
+
 > A comparative study of 13 VaR models — GARCH family, Filtered Historical Simulation, and EVT/GPD hybrids — evaluated under the Christoffersen (1998) conditional coverage framework and the Hansen–Lunde–Nason (2011) Model Confidence Set, across 4,800 trading days and three major stress regimes.
 
 > **Correction (Nov 2026).** The original GARCH VaR and ES numbers contained two bugs, fixed in `src/garch_var.py` and the notebook: (1) `arch`'s Student-t is *standardised* (unit variance) but the raw Student-t quantile was used, overstating GARCH-t VaR by ~29% at nu = 5 (this, not better tail modelling, is why GARCH-t looked over-conservative and "passed" the ES test); (2) `conditional_volatility` was lagged one extra day, so VaR used a stale forecast and violations clustered artificially. The Key Results table below is regenerated from the corrected notebook; the sub-period, Component VaR and MS-GARCH sections predate the fix and have not been re-run.
