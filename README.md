@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/rxj0102/Portfolio-VaR/actions/workflows/ci.yml/badge.svg)](https://github.com/rxj0102/Portfolio-VaR/actions/workflows/ci.yml)
 
-> A comparative study of 13 VaR models — GARCH family, Filtered Historical Simulation, and EVT/GPD hybrids — evaluated under the Christoffersen (1998) conditional coverage framework and the Hansen–Lunde–Nason (2011) Model Confidence Set, across 4,800 trading days and three major stress regimes.
+> A comparative study of 13 VaR models - GARCH family, Filtered Historical Simulation, and EVT/GPD hybrids - evaluated under the Christoffersen (1998) conditional coverage framework and the Hansen-Lunde-Nason (2011) Model Confidence Set, across 4,800 trading days and three major stress regimes.
 
 > **Correction (Nov 2026).** The original GARCH VaR and ES numbers contained two bugs, fixed in `src/garch_var.py` and the notebook: (1) `arch`'s Student-t is *standardised* (unit variance) but the raw Student-t quantile was used, overstating GARCH-t VaR by ~29% at nu = 5 (this, not better tail modelling, is why GARCH-t looked over-conservative and "passed" the ES test); (2) `conditional_volatility` was lagged one extra day, so VaR used a stale forecast and violations clustered artificially. The Key Results table below is regenerated from the corrected notebook; the sub-period, Component VaR and MS-GARCH sections predate the fix and have not been re-run.
 
@@ -16,7 +16,7 @@ This study makes three concrete empirical contributions:
 
 2. **Violation clustering remains the main weakness.** After the correction the Student-t GARCH variants still under-cover (1.2-1.4% vs 1% target) and most models fail the Christoffersen independence test, with the normal GARCH variants the exception (p_IND 0.05-0.10). Only the EVT hybrids hit the 1% target, and they still cluster. Whether regime switching would fix this is an open question that motivates, but does not by itself establish, the MS-GARCH extension below.
 
-3. **Correlation collapse drives 89% of crisis VaR widening.** Static delta-normal Component VaR underestimates crisis-period risk because it ignores the correlation regime shift. Comparing unconditional vs. GFC-period covariance matrices shows that portfolio VaR widens from 2.00% to 3.78% (+89%) primarily due to inter-asset correlation increases, not marginal volatility alone — quantified explicitly via rolling Component VaR attribution.
+3. **Crisis covariance raises portfolio VaR by about 88%.** Using the GJR-GARCH-t critical value, a static delta-normal Component VaR falls from 2.17% under the full-sample covariance to 4.09% under the GFC-window covariance (2008-01-02 to 2009-06-30, 377 days). The notebook shows how risk contributions shift across assets but does not separate the correlation effect from the volatility effect, so no attribution to correlation alone is claimed.
 
 ---
 
@@ -30,7 +30,7 @@ This study makes three concrete empirical contributions:
 | GLD | Gold | 10% |
 | TLT | Long-Duration Treasuries (20Y+) | 10% |
 
-**Study period:** November 2004 – December 2024 (~4,800 aligned trading days)  
+**Study period:** November 2004 - December 2024 (~4,800 aligned trading days)  
 **Return properties:** Ann. vol 13.4%, skew −0.245, excess kurtosis **9.94**, Jarque-Bera p < 0.001 (normality strongly rejected)
 
 ---
@@ -45,31 +45,31 @@ $$\widehat{\text{VaR}}_{t,\alpha} = -\hat{\sigma}_{t+1|t} \cdot z_\alpha$$
 
 where $z_\alpha$ is the $\alpha$-quantile of the fitted innovation distribution and $\hat{\sigma}_{t+1|t}$ is the one-step-ahead conditional volatility forecast from one of the models below.
 
-#### GARCH(1,1) — Bollerslev (1986)
+#### GARCH(1,1) - Bollerslev (1986)
 
 $$\sigma_t^2 = \omega + \alpha_1 \varepsilon_{t-1}^2 + \beta_1 \sigma_{t-1}^2, \qquad \varepsilon_t = \sigma_t z_t, \quad z_t \sim D(0,1)$$
 
 Stationarity: $\alpha_1 + \beta_1 < 1$. Persistence $\alpha_1 + \beta_1 \approx 0.98$ for daily equity returns (slow mean-reversion of volatility).
 
-#### GJR-GARCH(1,1) — Glosten, Jagannathan & Runkle (1993)
+#### GJR-GARCH(1,1) - Glosten, Jagannathan & Runkle (1993)
 
 $$\sigma_t^2 = \omega + (\alpha_1 + \gamma \mathbf{1}_{\varepsilon_{t-1}<0})\varepsilon_{t-1}^2 + \beta_1 \sigma_{t-1}^2$$
 
 The asymmetry term $\gamma > 0$ captures the **leverage effect**: negative shocks amplify future volatility more than positive shocks of equal magnitude. Economically, falling prices increase financial leverage, raising equity risk.
 
-#### EGARCH(1,1) — Nelson (1991)
+#### EGARCH(1,1) - Nelson (1991)
 
 $$\ln \sigma_t^2 = \omega + \alpha_1 \left(|z_{t-1}| - \mathbb{E}|z_{t-1}|\right) + \gamma z_{t-1} + \beta_1 \ln \sigma_{t-1}^2$$
 
 Log-variance formulation ensures $\sigma_t^2 > 0$ without positivity constraints. Sign asymmetry modelled via the $\gamma z_{t-1}$ term (typically $\gamma < 0$ for equities).
 
-#### FIGARCH(1,d,1) — Baillie, Bollerslev & Mikkelsen (1996)
+#### FIGARCH(1,d,1) - Baillie, Bollerslev & Mikkelsen (1996)
 
 $$\Phi(L)(1-L)^d \varepsilon_t^2 = \omega + [1 - \beta(L)] \nu_t$$
 
 Fractional differencing operator $(1-L)^d$ with $d \in (0,1)$ allows **long memory** in volatility: autocorrelations decay hyperbolically rather than exponentially. Captures the empirically observed slow decay in ACF of $\varepsilon_t^2$.
 
-#### APARCH(1,1) — Ding, Granger & Engle (1993)
+#### APARCH(1,1) - Ding, Granger & Engle (1993)
 
 $$\sigma_t^\delta = \omega + \alpha_1(|\varepsilon_{t-1}| - \gamma \varepsilon_{t-1})^\delta + \beta_1 \sigma_{t-1}^\delta$$
 
@@ -81,15 +81,15 @@ FHS separates the volatility forecasting problem from the tail shape problem. St
 
 $$\widehat{\text{VaR}}_{t,\alpha}^{\text{FHS}} = -\hat{\sigma}_{t+1|t} \cdot \hat{Q}_\alpha\left(\{\hat{z}_s\}_{s=t-W}^{t-1}\right)$$
 
-where $\hat{Q}_\alpha$ is the rolling empirical $\alpha$-quantile over a window of $W = 252$ days. Strictly backward-looking — no look-ahead bias. Implemented with GARCH(1,1), EWMA ($\lambda=0.94$), and APARCH filters.
+where $\hat{Q}_\alpha$ is the rolling empirical $\alpha$-quantile over a window of $W = 252$ days. Strictly backward-looking - no look-ahead bias. Implemented with GARCH(1,1), EWMA ($\lambda=0.94$), and APARCH filters.
 
 **EWMA variance** (RiskMetrics 1994):
 
 $$\hat{\sigma}_t^2 = \lambda \hat{\sigma}_{t-1}^2 + (1-\lambda) r_{t-1}^2, \qquad \lambda = 0.94$$
 
-### 3. Extreme Value Theory — Peaks-Over-Threshold
+### 3. Extreme Value Theory - Peaks-Over-Threshold
 
-The Pickands–Balkema–de Haan theorem guarantees that excesses above a high threshold $u$ converge to a Generalised Pareto Distribution (GPD) as $u \to \infty$. Applied to standardised GARCH residuals:
+The Pickands-Balkema-de Haan theorem guarantees that excesses above a high threshold $u$ converge to a Generalised Pareto Distribution (GPD) as $u \to \infty$. Applied to standardised GARCH residuals:
 
 $$P(Z - u > z \mid Z > u) \approx 1 - \left(1 + \hat{\xi} \frac{z}{\hat{\sigma}_\text{GPD}}\right)^{-1/\hat{\xi}}$$
 
@@ -99,7 +99,7 @@ $$\hat{q}_\alpha = u + \frac{\hat{\sigma}_\text{GPD}}{\hat{\xi}} \left[\left(\fr
 
 where $n_u$ is the number of exceedances. Threshold $u$ set at the 90th percentile of $\{-\hat{z}_t\}$; the mean-excess plot confirms linear behaviour above this level (consistent with GPD). Estimated $\hat{\xi} \approx 0.18 > 0$ confirms a heavy-tailed (Fréchet domain) distribution.
 
-### 4. Component VaR — Delta-Normal Decomposition
+### 4. Component VaR - Delta-Normal Decomposition
 
 For a portfolio with weight vector $\mathbf{w}$, asset return covariance matrix $\boldsymbol{\Sigma}$, and portfolio volatility $\sigma_p = \sqrt{\mathbf{w}'\boldsymbol{\Sigma}\mathbf{w}}$:
 
@@ -119,21 +119,21 @@ Define the hit sequence $I_t = \mathbf{1}\{r_t < -\widehat{\text{VaR}}_{t,\alpha
 
 The three tests are nested LR statistics under the Markov(1) framework:
 
-**POF** (Kupiec 1995) — tests $H_0: \hat{\pi} = \alpha$ where $\hat{\pi} = n_1 / n$:
+**POF** (Kupiec 1995) - tests $H_0: \hat{\pi} = \alpha$ where $\hat{\pi} = n_1 / n$:
 
 $$\text{LR}_\text{POF} = -2\left[n_1 \ln\frac{\alpha}{\hat{\pi}} + n_0 \ln\frac{1-\alpha}{1-\hat{\pi}}\right] \xrightarrow{d} \chi^2(1)$$
 
-**IND** — tests $H_0: \pi_{01} = \pi_{11}$ (first-order Markov structure):
+**IND** - tests $H_0: \pi_{01} = \pi_{11}$ (first-order Markov structure):
 
 $$\text{LR}_\text{IND} = -2\left[\ell(\hat{\pi}) - \ell(\hat{\pi}_{01}, \hat{\pi}_{11})\right] \xrightarrow{d} \chi^2(1)$$
 
 where $\hat{\pi}_{ij} = n_{ij} / \sum_j n_{ij}$ are transition probabilities of the hit process.
 
-**CC** — joint test, $\chi^2(2)$:
+**CC** - joint test, $\chi^2(2)$:
 
 $$\text{LR}_\text{CC} = \text{LR}_\text{POF} + \text{LR}_\text{IND}$$
 
-### Expected Shortfall — McNeil & Frey (2000)
+### Expected Shortfall - McNeil & Frey (2000)
 
 For GARCH-t models, the parametric ES is:
 
@@ -141,7 +141,7 @@ $$\widehat{\text{ES}}_{t,\alpha} = \hat{\sigma}_{t+1|t} \cdot \frac{f_\nu(t_\nu^
 
 where $f_\nu$ and $t_\nu^{-1}$ are the Student-t density and quantile function. The specification test uses exceedance residuals $e_t = -r_t - \widehat{\text{ES}}_t$ on violation days; $H_0$: $\mathbb{E}[e_t] = 0$ via one-sample t-test.
 
-### Model Confidence Set — Hansen, Lunde & Nason (2011)
+### Model Confidence Set - Hansen, Lunde & Nason (2011)
 
 Tick (quantile) loss provides a **proper scoring rule** for comparing VaR models:
 
@@ -181,26 +181,35 @@ where $\hat{\omega}_i^2$ is the Newey-West HAC variance of $\{d_{i,t}\}$. Bootst
 
 | Period | GJR-GARCH-t | APARCH-EVT | HS |
 |--------|------------|-----------|-----|
-| **GFC (2007–09)** | 1.06% ✓ | 0.93% ✓ | 2.10% ✗ |
+| **GFC (2007-09)** | 1.06% ✓ | 0.93% ✓ | 2.10% ✗ |
 | **COVID (2020)** | 2.77% ✗ | 2.31% ✗ | 3.45% ✗ |
 | **Rate shock (2022)** | 0.80% ✓ | 0.65% ✓ | 1.20% ✗ |
-| **Post-COVID (2021–24)** | 0.50% | 0.40% | 0.62% |
+| **Post-COVID (2021-24)** | 0.50% | 0.40% | 0.62% |
 
-COVID violations (GJR-GARCH-t: 2.77%) reflect the March 2020 regime break — volatility tripled in 72 hours, a transition speed no daily-updating GARCH can fully absorb.
+COVID violations (GJR-GARCH-t: 2.77%) reflect the March 2020 regime break - volatility tripled in 72 hours, a transition speed no daily-updating GARCH can fully absorb.
 
-### Component VaR — Normal vs. Stress Regime
+### Component VaR - Normal vs. Stress Regime
 
-Portfolio VaR: **2.00%** (normal) → **3.78%** (GFC stress), an **89% widening**.
+Portfolio VaR: **2.17%** (full sample) to **4.09%** (GFC window), about an 88% widening. Values are copied from the stored output of `notebooks/portfolio_var_analysis.ipynb`.
 
-| Asset | Weight | CompVaR % (Normal) | CompVaR % (GFC) | Δ |
+| Asset | Weight | CompVaR % (Normal) | CompVaR % (GFC) | Change |
 |-------|--------|--------------------|-----------------|---|
+| SPY | 35% | 49.91% | 57.09% | +7.2pp |
+| QQQ | 30% | 20.19% | 13.47% | -6.7pp |
+| EFA | 15% | 19.13% | 18.18% | -1.0pp |
+| GLD | 10% | 11.95% | 13.36% | +1.4pp |
+| TLT | 10% | -1.18% | -2.10% | -0.9pp |
+
+SPY's share of portfolio risk rises in the GFC window and TLT stays a small negative contributor (a hedge). The notebook does not test why individual shares move, so no causal explanation for the shifts is offered here.
+
+-------|--------|--------------------|-----------------|---|
 | SPY | 35% | 49.9% | 57.1% | +7.2pp |
 | QQQ | 30% | 20.2% | 22.4% | +2.2pp |
 | EFA | 15% | 19.1% | 21.4% | +2.3pp |
 | GLD | 10% | 12.0% | 1.1% | −10.9pp |
 | TLT | 10% | **−1.2%** | **−2.0%** | −0.8pp |
 
-GLD's diversification benefit collapses during GFC (gold–equity correlations turned positive in the 2008 liquidity crisis). TLT remains a hedge but its contribution shrinks in relative terms as equity risk dominates.
+GLD's diversification benefit collapses during GFC (gold-equity correlations turned positive in the 2008 liquidity crisis). TLT remains a hedge but its contribution shrinks in relative terms as equity risk dominates.
 
 ---
 
@@ -232,11 +241,11 @@ $$\mathbf{R}_t = \text{diag}(\mathbf{Q}_t)^{-1/2} \mathbf{Q}_t\, \text{diag}(\ma
 
 - Time-varying portfolio covariance: $\boldsymbol{\Sigma}_t = \mathbf{D}_t \mathbf{R}_t \mathbf{D}_t$ where $\mathbf{D}_t = \text{diag}(\hat{\sigma}_{i,t})$
 - Daily Component VaR: $\text{CompVaR}_{i,t} = w_i (\boldsymbol{\Sigma}_t \mathbf{w})_i / \sigma_{p,t} \cdot (-z_\alpha)$
-- **Expected outcome:** Correlation-adjusted CompVaR would have signalled increasing SPY concentration 30–60 days before the GFC peak — a lead indicator absent from the static model.
+- **Expected outcome:** Correlation-adjusted CompVaR would have signalled increasing SPY concentration 30-60 days before the GFC peak - a lead indicator absent from the static model.
 
-### 3. CVaR Portfolio Optimisation (Rockafellar–Uryasev 2000)
+### 3. CVaR Portfolio Optimisation (Rockafellar-Uryasev 2000)
 
-**Motivation:** VaR is not sub-additive — it can penalise diversification. Expected Shortfall (CVaR) is coherent (Artzner et al. 1999) and is the Basel IV capital metric. The natural next step is to minimise portfolio CVaR directly.
+**Motivation:** VaR is not sub-additive - it can penalise diversification. Expected Shortfall (CVaR) is coherent (Artzner et al. 1999) and is the Basel IV capital metric. The natural next step is to minimise portfolio CVaR directly.
 
 **Methodology:**
 
@@ -249,7 +258,7 @@ where $\zeta$ is the VaR auxiliary variable and $\mathbf{r}_t$ are historical re
 
 - Compare CVaR-optimal weights against the static 35/30/15/10/10 allocation
 - Run an out-of-sample backtest on rolling 252-day optimisation windows
-- **Expected outcome:** CVaR-optimal portfolio will hold significantly more TLT and GLD (both have negative or near-zero beta to equity tail events), reducing portfolio VaR by an estimated 15–25% without sacrificing mean return.
+- **Expected outcome:** CVaR-optimal portfolio will hold significantly more TLT and GLD (both have negative or near-zero beta to equity tail events), reducing portfolio VaR by an estimated 15-25% without sacrificing mean return.
 
 ---
 
@@ -300,7 +309,7 @@ jupyter notebook notebooks/portfolio_var_analysis.ipynb
 pytest tests/ -v
 ```
 
-Data is downloaded automatically from Yahoo Finance — no local files required.
+Data is downloaded automatically from Yahoo Finance - no local files required.
 
 ---
 
