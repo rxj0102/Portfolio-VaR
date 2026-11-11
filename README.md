@@ -4,7 +4,7 @@
 
 > A comparative study of 13 VaR models - GARCH family, Filtered Historical Simulation, and EVT/GPD hybrids - evaluated under the Christoffersen (1998) conditional coverage framework and the Hansen-Lunde-Nason (2011) Model Confidence Set, across 4,800 trading days and three major stress regimes.
 
-> **Correction (Nov 2026).** The original GARCH VaR and ES numbers contained two bugs, fixed in `src/garch_var.py` and the notebook: (1) `arch`'s Student-t is *standardised* (unit variance) but the raw Student-t quantile was used, overstating GARCH-t VaR by ~29% at nu = 5 (this, not better tail modelling, is why GARCH-t looked over-conservative and "passed" the ES test); (2) `conditional_volatility` was lagged one extra day, so VaR used a stale forecast and violations clustered artificially. The Key Results table below is regenerated from the corrected notebook; the sub-period, Component VaR and MS-GARCH sections predate the fix and have not been re-run.
+> **Correction (Nov 2026).** The original GARCH VaR and ES numbers contained two bugs, fixed in `src/garch_var.py` and the notebook: (1) `arch`'s Student-t is *standardised* (unit variance) but the raw Student-t quantile was used, overstating GARCH-t VaR by ~29% at nu = 5 (this, not better tail modelling, is why GARCH-t looked over-conservative and "passed" the ES test); (2) `conditional_volatility` was lagged one extra day, so VaR used a stale forecast and violations clustered artificially. The notebook was re-run end to end on 2026-11-11 and every table below, including the sub-period and Component VaR sections, comes from that run. The Model Confidence Set p-value now uses a circular block bootstrap instead of an iid row bootstrap, because tick losses are autocorrelated. On this sample the 90% MCS is the same under both (12 of 13 models, FHS-EWMA excluded); the notebook prints the side by side comparison.
 
 ---
 
@@ -151,7 +151,7 @@ The MCS iteratively eliminates the worst model using:
 
 $$\bar{T}_M = \max_{i \in M} \frac{\bar{d}_i}{\hat{\omega}_i / \sqrt{T}}, \qquad \bar{d}_i = \frac{1}{|M|-1} \sum_{j \neq i} \overline{(L^{(i)} - L^{(j)})}$$
 
-where $\hat{\omega}_i^2$ is the Newey-West HAC variance of $\{d_{i,t}\}$. Bootstrap p-values are computed under $H_0$ by re-centring. Elimination continues until $p_{\bar{T}} > 0.10$.
+where $\hat{\omega}_i^2$ is the Newey-West HAC variance of $\{d_{i,t}\}$. Bootstrap p-values are computed under $H_0$ by re-centring, using a circular block bootstrap (Politis & Romano 1992) with block length equal to the Newey-West lag, so the resampled losses keep their autocorrelation. Elimination continues until $p_{\bar{T}} > 0.10$.
 
 ---
 
@@ -179,18 +179,29 @@ where $\hat{\omega}_i^2$ is the Newey-West HAC variance of $\{d_{i,t}\}$. Bootst
 
 ### Sub-Period Stress Analysis
 
-| Period | GJR-GARCH-t | APARCH-EVT | HS |
-|--------|------------|-----------|-----|
-| **GFC (2007-09)** | 1.06% ✓ | 0.93% ✓ | 2.10% ✗ |
-| **COVID (2020)** | 2.77% ✗ | 2.31% ✗ | 3.45% ✗ |
-| **Rate shock (2022)** | 0.80% ✓ | 0.65% ✓ | 1.20% ✗ |
-| **Post-COVID (2021-24)** | 0.50% | 0.40% | 0.62% |
+Violation rate of the 99% VaR in each window (expected 1%). (reject) marks a Kupiec POF rejection at 5%, as printed by the notebook stress cell.
 
-COVID violations (GJR-GARCH-t: 2.77%) reflect the March 2020 regime break - volatility tripled in 72 hours, a transition speed no daily-updating GARCH can fully absorb.
+| Model | GFC (2007-09) | COVID (2020) | Rate shock (2022) | Post-COVID (2021-24) |
+|-------|------|------|------|------|
+| HS | 1.85% (reject) | 2.77% (reject) | 2.79% (reject) | 1.29% |
+| GARCH-N | 2.51% (reject) | 3.95% (reject) | 1.59% (reject) | 1.39% |
+| GARCH-t | 1.85% (reject) | 3.56% (reject) | 1.20% | 1.09% |
+| GJR-GARCH-N | 2.51% (reject) | 3.56% (reject) | 1.99% (reject) | 1.69% (reject) |
+| GJR-GARCH-t | 1.72% (reject) | 2.77% (reject) | 1.20% | 1.19% |
+| FIGARCH-N | 2.25% (reject) | 4.35% (reject) | 1.99% (reject) | 1.39% |
+| FIGARCH-t | 1.72% (reject) | 3.16% (reject) | 1.20% | 1.00% |
+| EGARCH-t | 1.59% (reject) | 4.35% (reject) | 1.20% | 1.29% |
+| FHS | 1.19% | 2.77% (reject) | 1.59% (reject) | 1.19% |
+| FHS-EWMA | 1.19% | 2.37% (reject) | 1.20% | 1.29% |
+| FHS-APARCH | 1.32% | 2.77% (reject) | 1.20% | 1.09% |
+| FHS-EVT | 1.32% | 2.77% (reject) | 1.20% | 0.60% |
+| APARCH-EVT | 1.46% | 3.16% (reject) | 0.80% | 0.50% (reject) |
+
+Every model is rejected in the COVID window. Filtered historical simulation and the EVT hybrids pass the GFC window, where every parametric GARCH variant is rejected.
 
 ### Component VaR - Normal vs. Stress Regime
 
-Portfolio VaR: **2.17%** (full sample) to **4.09%** (GFC window), about an 88% widening. Values are copied from the stored output of `notebooks/portfolio_var_analysis.ipynb`.
+Portfolio VaR: **2.17%** (full sample) to **4.09%** (GFC window), about an 88% widening. Values are copied from the stored output of `notebooks/portfolio_var_analysis.ipynb`, regenerated on 2026-11-11.
 
 | Asset | Weight | CompVaR % (Normal) | CompVaR % (GFC) | Change |
 |-------|--------|--------------------|-----------------|---|
@@ -202,14 +213,6 @@ Portfolio VaR: **2.17%** (full sample) to **4.09%** (GFC window), about an 88% w
 
 SPY's share of portfolio risk rises in the GFC window and TLT stays a small negative contributor (a hedge). The notebook does not test why individual shares move, so no causal explanation for the shifts is offered here.
 
--------|--------|--------------------|-----------------|---|
-| SPY | 35% | 49.9% | 57.1% | +7.2pp |
-| QQQ | 30% | 20.2% | 22.4% | +2.2pp |
-| EFA | 15% | 19.1% | 21.4% | +2.3pp |
-| GLD | 10% | 12.0% | 1.1% | −10.9pp |
-| TLT | 10% | **−1.2%** | **−2.0%** | −0.8pp |
-
-GLD's diversification benefit collapses during GFC (gold-equity correlations turned positive in the 2008 liquidity crisis). TLT remains a hedge but its contribution shrinks in relative terms as equity risk dominates.
 
 ---
 
@@ -226,7 +229,7 @@ GLD's diversification benefit collapses during GFC (gold-equity correlations tur
 
 $$\widehat{\text{VaR}}_t = \sum_{s \in \{1,2\}} P(S_t = s \mid \mathcal{F}_{t-1}) \cdot \widehat{\text{VaR}}_t^{(s)}$$
 
-- **Expected outcome:** Mixing over regimes raises VaR in pre-crisis periods (when $P(S_t=2|\mathcal{F}_{t-1})$ begins to rise), reducing violation clustering and improving the IND test p-value.
+- **Hypothesis to test:** mixing over regimes may raise VaR in pre-crisis periods (when $P(S_t=2|\mathcal{F}_{t-1})$ begins to rise), reducing violation clustering and improving the IND test p-value.
 
 ### 2. DCC-GARCH Dynamic Component VaR
 
@@ -241,7 +244,7 @@ $$\mathbf{R}_t = \text{diag}(\mathbf{Q}_t)^{-1/2} \mathbf{Q}_t\, \text{diag}(\ma
 
 - Time-varying portfolio covariance: $\boldsymbol{\Sigma}_t = \mathbf{D}_t \mathbf{R}_t \mathbf{D}_t$ where $\mathbf{D}_t = \text{diag}(\hat{\sigma}_{i,t})$
 - Daily Component VaR: $\text{CompVaR}_{i,t} = w_i (\boldsymbol{\Sigma}_t \mathbf{w})_i / \sigma_{p,t} \cdot (-z_\alpha)$
-- **Expected outcome:** Correlation-adjusted CompVaR would have signalled increasing SPY concentration 30-60 days before the GFC peak - a lead indicator absent from the static model.
+- **Hypothesis to test:** correlation-adjusted CompVaR may signal rising SPY concentration ahead of the GFC peak, which the static model cannot show. Not yet implemented, so no lead time is claimed.
 
 ### 3. CVaR Portfolio Optimisation (Rockafellar-Uryasev 2000)
 
@@ -258,7 +261,7 @@ where $\zeta$ is the VaR auxiliary variable and $\mathbf{r}_t$ are historical re
 
 - Compare CVaR-optimal weights against the static 35/30/15/10/10 allocation
 - Run an out-of-sample backtest on rolling 252-day optimisation windows
-- **Expected outcome:** CVaR-optimal portfolio will hold significantly more TLT and GLD (both have negative or near-zero beta to equity tail events), reducing portfolio VaR by an estimated 15-25% without sacrificing mean return.
+- **Hypothesis to test:** a CVaR-optimal portfolio may hold more TLT and GLD than the static allocation. Not yet implemented, so no VaR reduction is claimed.
 
 ---
 
