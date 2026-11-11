@@ -17,6 +17,7 @@ from metrics import (
     christoffersen_test,
     mcneil_frey_es_test,
     model_confidence_set,
+    _circular_block_indices,
     run_backtest,
     _tick_loss,
 )
@@ -246,3 +247,38 @@ class TestRunBacktest:
         df["all_nan"] = np.nan
         summary = run_backtest(df, run_mcs=False)
         assert "all_nan" not in summary.index
+
+
+# ── circular block bootstrap ─────────────────────────────────────────────────
+
+class TestCircularBlockBootstrap:
+    def test_indices_shape_and_range(self):
+        rng = np.random.default_rng(0)
+        idx = _circular_block_indices(1000, 10, rng)
+        assert idx.shape == (1000,)
+        assert idx.min() >= 0 and idx.max() < 1000
+
+    def test_blocks_are_consecutive_with_wraparound(self):
+        rng = np.random.default_rng(1)
+        idx = _circular_block_indices(50, 7, rng)
+        for k in range(0, 49, 7):
+            block = idx[k:k + 7]
+            assert np.all(np.diff(block) % 50 == 1)
+
+    def test_preserves_autocorrelation_unlike_iid(self):
+        """An AR(1) series keeps most of its lag-1 autocorrelation under the
+        block bootstrap; an iid row bootstrap destroys it."""
+        rng = np.random.default_rng(2)
+        T, phi = 4000, 0.8
+        x = np.zeros(T)
+        for t in range(1, T):
+            x[t] = phi * x[t - 1] + rng.normal()
+
+        def ac1(v):
+            v = v - v.mean()
+            return float((v[1:] * v[:-1]).sum() / (v * v).sum())
+
+        block = np.mean([ac1(x[_circular_block_indices(T, 20, rng)]) for _ in range(20)])
+        iid = np.mean([ac1(x[rng.integers(0, T, T)]) for _ in range(20)])
+        assert block > 0.6
+        assert abs(iid) < 0.1
