@@ -223,7 +223,7 @@ class TestRunBacktest:
 
     def test_bad_model_fails_status(self):
         summary = run_backtest(self._var_df(), run_mcs=False)
-        assert summary.loc["model_bad", "status"] == "FAIL"
+        assert summary.loc["model_bad", "status"].startswith("FAIL")
 
     def test_mcs_column_present_when_requested(self):
         summary = run_backtest(self._var_df(), run_mcs=True, mcs_B=50)
@@ -246,3 +246,11 @@ class TestRunBacktest:
         df["all_nan"] = np.nan
         summary = run_backtest(df, run_mcs=False)
         assert "all_nan" not in summary.index
+
+
+def test_backtest_status_single_verdict():
+    from metrics import backtest_status
+    assert backtest_status(0.5, 0.5, 0.5) == "PASS"
+    assert backtest_status(0.03, 0.4, 0.06) == "FAIL: POF"
+    assert backtest_status(0.6, 0.01, 0.02) == "FAIL: IND, CC"
+    assert backtest_status(float("nan"), 0.5, 0.5) == "FAIL: POF"
