@@ -242,11 +242,27 @@ def mcneil_frey_es_test(
     }
 
 
+def _circular_block_indices(T: int, block_len: int, rng: np.random.Generator) -> np.ndarray:
+    """Row indices for one circular block bootstrap sample (Politis & Romano 1992).
+
+    Draws ceil(T / block_len) block starts uniformly, takes ``block_len``
+    consecutive rows from each (wrapping at the end), and truncates to T.
+    Keeping rows together preserves the autocorrelation and volatility
+    clustering of the loss series, which an iid row bootstrap destroys.
+    """
+    block_len = max(1, int(block_len))
+    n_blocks = -(-T // block_len)
+    starts = rng.integers(0, T, n_blocks)
+    idx = (starts[:, None] + np.arange(block_len)[None, :]) % T
+    return idx.ravel()[:T]
+
+
 def model_confidence_set(
     loss_df: pd.DataFrame,
     alpha: float = 0.10,
     B: int = 500,
     seed: int = 42,
+    block_len: int | None = None,
 ) -> pd.DataFrame:
     """Model Confidence Set (Hansen, Lunde & Nason 2011).
 
@@ -263,7 +279,9 @@ def model_confidence_set(
            t̄_i = d̄_i / (ω̂_i / √T)
          where d̄_i = mean(d_{i,t}),  ω̂_i² = Newey-West variance (lag = T^(1/3))
       3. Test statistic: T_M = max_i t̄_i
-      4. Bootstrap p-value: resample rows of L, re-center, compute T_boot^(b)
+      4. Bootstrap p-value: resample blocks of rows of L (circular block
+         bootstrap, block length = Newey-West lag by default), re-center,
+         compute T_boot^(b)
            p = #{T_boot^(b) ≥ T_obs} / B
       5. If p ≤ α: eliminate argmax_i t̄_i and repeat.
          If p > α: stop — remaining models form the MCS.
@@ -276,8 +294,11 @@ def model_confidence_set(
     ----------
     loss_df : DataFrame (T × M) of per-period loss values per model.
     alpha   : MCS significance level for the elimination test (default 0.10).
-    B       : IID bootstrap replications for p-value calibration (default 500).
+    B       : Block bootstrap replications for p-value calibration (default 500).
     seed    : Random seed for reproducibility.
+    block_len : Block length for the circular block bootstrap. Defaults to
+              the Newey-West lag T^(1/3), matching the HAC variance. Use 1
+              only to reproduce the old iid bootstrap.
 
     Returns
     -------
@@ -303,10 +324,13 @@ def model_confidence_set(
         t_bars = mu_D / np.sqrt(var_D / T)
         T_obs = float(t_bars.max())
 
-        # Bootstrap distribution of T_max under H₀ (iid bootstrap, re-centered)
+        # Bootstrap distribution of T_max under H₀ (circular block bootstrap,
+        # re-centered). Loss differentials are autocorrelated, so rows are
+        # resampled in blocks rather than one at a time.
+        bl = lags if block_len is None else block_len
         T_boot = np.empty(B)
         for b in range(B):
-            idx_b = rng.integers(0, T, T)
+            idx_b = _circular_block_indices(T, bl, rng)
             L_b = L[idx_b]
             D_b = L_b - L_b.mean(axis=1, keepdims=True)
             mu_b = D_b.mean(axis=0) - mu_D          # re-center at observed mean
