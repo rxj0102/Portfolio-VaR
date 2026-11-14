@@ -328,6 +328,18 @@ def model_confidence_set(
     )
 
 
+def backtest_status(p_pof: float, p_ind: float, p_cc: float, level: float = 0.05) -> str:
+    """One verdict per model from the three Christoffersen tests.
+
+    ``"PASS"`` only if coverage (POF), independence (IND) and the joint test
+    (CC) are all not rejected at ``level``. Otherwise ``"FAIL: "`` followed by
+    the rejected components, for example ``"FAIL: POF"`` or ``"FAIL: IND, CC"``.
+    """
+    bad = [name for name, p in (("POF", p_pof), ("IND", p_ind), ("CC", p_cc))
+           if not (np.isfinite(p) and p > level)]
+    return "PASS" if not bad else "FAIL: " + ", ".join(bad)
+
+
 def run_backtest(
     var_df: pd.DataFrame,
     alpha: float = 0.01,
@@ -349,7 +361,7 @@ def run_backtest(
     Returns
     -------
     DataFrame indexed by model name with columns:
-        Violations, ViolRate, p_POF, p_IND, p_CC, status, in_MCS (if run_mcs).
+        Violations, ViolRate, p_POF, p_IND, p_CC, status (see backtest_status), in_MCS (if run_mcs).
     """
     returns = var_df["Portfolio Returns"]
     model_cols = [c for c in var_df.columns if c != "Portfolio Returns"]
@@ -360,12 +372,7 @@ def run_backtest(
             continue
         res = christoffersen_test(returns, var_df[m], alpha=alpha)
 
-        p_pof = res["p_POF"]
-        p_cc = res["p_CC"]
-        if np.isfinite(p_pof) and p_pof > 0.05:
-            status = "CC ✓" if (np.isfinite(p_cc) and p_cc > 0.05) else "IND ✗"
-        else:
-            status = "FAIL"
+        status = backtest_status(res["p_POF"], res["p_IND"], res["p_CC"])
 
         records[m] = {
             "Violations": res["n_violations"],

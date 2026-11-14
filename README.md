@@ -16,7 +16,7 @@ This study makes three concrete empirical contributions:
 
 1. **Formal model ranking via proper scoring rules.** Beyond a binary pass/fail backtest, models are compared by the Model Confidence Set (HLN 2011) using tick loss, a proper scoring rule for quantile forecasts. On the open data sample the 90% MCS keeps all 13 models: tick-loss differences between reasonable VaR models are small relative to sampling noise, so the MCS cannot separate them.
 
-2. **Violation clustering remains the main weakness.** The Student-t GARCH variants under-cover (1.21% to 1.32% vs the 1% target) and only GARCH-t and GJR-GARCH-t pass the joint conditional coverage test at 5% (p_CC 0.051 and 0.065). The EVT hybrids hit the target rate (0.94% and 0.96%) but fail independence (p_IND 0.0002 and 0.0023), so their violations cluster. Whether regime switching would fix this is an open question that motivates, but does not by itself establish, the MS-GARCH extension below.
+2. **Violation clustering remains the main weakness.** The Student-t GARCH variants under-cover (1.21% to 1.32% vs the 1% target) and only GARCH-t passes all three Christoffersen tests at 5% (GJR-GARCH-t passes the joint test, p_CC 0.065, but fails unconditional coverage, p_POF 0.030). The EVT hybrids hit the target rate (0.94% and 0.96%) but fail independence (p_IND 0.0002 and 0.0023), so their violations cluster. Whether regime switching would fix this is an open question that motivates, but does not by itself establish, the MS-GARCH extension below.
 
 3. **Crisis covariance raises portfolio VaR by about 78%.** Using the GJR-GARCH-t critical value, a static delta-normal Component VaR rises from 2.64% under the full-sample covariance to 4.70% under the GFC-window covariance (2008-01-02 to 2009-06-30, 377 days). The notebook shows how risk contributions shift across assets but does not separate the correlation effect from the volatility effect, so no attribution to correlation alone is claimed.
 
@@ -180,7 +180,7 @@ All tables are copied from the executed notebook outputs in `notebooks/portfolio
 | GJR-GARCH-N | 102 | 1.69% | 0.000 | 0.832 | 0.000 |
 | GARCH-N | 104 | 1.72% | 0.000 | 0.400 | 0.000 |
 
-> Normal innovations under-cover badly (1.6% to 1.7%). GARCH-t and GJR-GARCH-t are the only models that pass conditional coverage at 5%. McNeil-Frey ES test: none of the four t-GARCH models is rejected (GJR-GARCH-t p = 0.170, GARCH-t p = 0.096, FIGARCH-t p = 0.138, EGARCH-t p = 0.292); all t-statistics are positive, so if anything ES is slightly understated.
+> Normal innovations under-cover badly (1.6% to 1.7%). GARCH-t is the only model that passes all three tests at 5%; GJR-GARCH-t passes the joint CC test but fails POF. The 90% Model Confidence Set keeps all 13 models. McNeil-Frey ES test: none of the four t-GARCH models is rejected (GJR-GARCH-t p = 0.170, GARCH-t p = 0.096, FIGARCH-t p = 0.138, EGARCH-t p = 0.292); all t-statistics are positive, so if anything ES is slightly understated.
 
 ### Sub-Period Violation Rates (target 1%)
 
@@ -206,6 +206,19 @@ Portfolio VaR (delta normal, GJR-GARCH-t critical value): **2.64%** with the ful
 
 QQQ carries more risk than its weight over the full sample (the 2000 to 2002 tech drawdown is in it), while SPY's share rises in the GFC window. TLT stays a small negative contributor (a hedge). The notebook does not test why shares move, so no causal explanation is offered.
 
+### Dynamic Component VaR (DCC-GARCH)
+
+Covariance from GARCH(1,1)-t volatility per asset and DCC(1,1) correlations, estimated a = 0.0266, b = 0.9647 (persistence 0.991). Each day's covariance uses information through the prior day.
+
+| Asset | Full backtest | GFC (2008-01 to 2009-06) | COVID (2020-02 to 2020-04) | 2022 |
+|---|---|---|---|---|
+| SPY | 42.45% | 47.47% | 48.57% | 42.39% |
+| QQQ | 48.56% | 45.34% | 44.74% | 47.55% |
+| EFA | 10.37% | 9.55% | 9.72% | 9.45% |
+| TLT | -1.38% | -2.36% | -3.02% | +0.61% |
+
+Mean share of portfolio VaR by window. TLT is a hedge in the GFC and COVID windows but adds risk in 2022, when stocks and bonds fell together; a static covariance cannot show that switch. SPY's share rose from 46.41% in the second half of 2007 to 49.22% in September to December 2008, a small move, so the dynamic decomposition gives no strong early warning here. The delta-normal VaR built from the DCC covariance under-covers (101 violations, 1.67%, p_POF < 0.0001) because it assumes normal tails; its violations are not clustered (p_IND 0.353).
+
 ---
 
 ## Proposed Extensions
@@ -223,7 +236,7 @@ $$\widehat{\text{VaR}}_t = \sum_{s \in \{1,2\}} P(S_t = s \mid \mathcal{F}_{t-1}
 
 - **Expected outcome:** Mixing over regimes raises VaR in pre-crisis periods (when $P(S_t=2|\mathcal{F}_{t-1})$ begins to rise), reducing violation clustering and improving the IND test p-value.
 
-### 2. DCC-GARCH Dynamic Component VaR
+### 2. DCC-GARCH Dynamic Component VaR (done: see Key Results; a Student-t DCC would fix the tail under-coverage)
 
 **Motivation:** The delta-normal Component VaR uses an **unconditional** covariance matrix, ignoring the documented increase in asset correlations during market stress. This understates equity concentration risk precisely when it matters most.
 
