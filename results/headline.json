@@ -1,0 +1,13 @@
+{
+  "sample_start": "2001-01-01",
+  "sample_end": "2024-12-31",
+  "backtest_days": 6049,
+  "expected_violations": 60.49,
+  "component_var_model": "GJR-GARCH-t",
+  "portfolio_var_normal": 0.026387166772248748,
+  "portfolio_var_gfc": 0.0469881583137398,
+  "gfc_window": [
+    "2008-01-02",
+    "2009-06-30"
+  ]
+}
