@@ -1,5 +1,7 @@
 # Writing-Sample Source Material — Portfolio-VaR
 
+> Note (Nov 2026): this file audits the earlier Yahoo Finance run. The repo now uses open data (FRED, Ken French) without GLD; see README.md for the current figures.
+
 Everything below comes from files already in this repository at commit `3e58762`, or from its git history. The one exception is §5: the test suite was run for this extraction. No new analysis was run and no numbers were estimated. Where a value in one file conflicts with another file, both values are shown and the conflict is flagged. **Treat the flags in §3.4 and §4.2 as critical before quoting any number.**
 
 Sources and abbreviations used below:
