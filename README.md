@@ -236,7 +236,7 @@ $$\widehat{\text{VaR}}_t = \sum_{s \in \{1,2\}} P(S_t = s \mid \mathcal{F}_{t-1}
 
 - **Expected outcome:** Mixing over regimes raises VaR in pre-crisis periods (when $P(S_t=2|\mathcal{F}_{t-1})$ begins to rise), reducing violation clustering and improving the IND test p-value.
 
-### 2. DCC-GARCH Dynamic Component VaR (done: see Key Results; a Student-t DCC would fix the tail under-coverage)
+### 2. DCC-GARCH Dynamic Component VaR (done: see Key Results; a Student-t DCC is the natural next step for the tail under-coverage)
 
 **Motivation:** The delta-normal Component VaR uses an **unconditional** covariance matrix, ignoring the documented increase in asset correlations during market stress. This understates equity concentration risk precisely when it matters most.
 
@@ -339,3 +339,11 @@ Data is downloaded from FRED and the Ken French Data Library on first run (no AP
 | Rockafellar & Uryasev (2000) *J. Risk* | CVaR linear programming |
 | Engle (2002) *J. Bus. Econ. Stat.* | DCC-GARCH |
 | Haas, Mittnik & Paolella (2004) *J. Financ. Econometrics* | MS-GARCH |
+
+## Data snapshot
+
+`data/open_data_manifest.json` records every open data file behind the results above (SHA-256, rows, first and last date). Ken French and FRED occasionally revise history; after a fresh download, check whether the inputs still match with:
+
+```bash
+python -c "from src.opendata import verify_manifest; print(verify_manifest('data/open_data_manifest.json'))"
+```
