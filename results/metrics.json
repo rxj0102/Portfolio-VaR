@@ -1,0 +1,359 @@
+{
+  "sample": {
+    "data_first": "1993-10-04",
+    "first_day": "2001-01-02",
+    "last_day": "2026-09-30",
+    "n_days": 6474,
+    "expected_violations": 64.74,
+    "refit_days": 21,
+    "n_refits": 309,
+    "training_days_first": 1830,
+    "alpha": 0.01,
+    "ann_vol": 0.167474,
+    "skew": -0.0624116,
+    "excess_kurtosis": 7.90743
+  },
+  "weights": {
+    "SPY": 0.388889,
+    "QQQ": 0.333333,
+    "EFA": 0.166667,
+    "TLT": 0.111111
+  },
+  "models": {
+    "HS": {
+      "violations": 102,
+      "rate": 0.0157553,
+      "p_pof": 1.75881e-05,
+      "p_ind": 4.29291e-07,
+      "p_cc": 2.80053e-10,
+      "status": "FAIL: POF, IND, CC",
+      "tick_loss": 0.000375143,
+      "mean_var": 0.0250363,
+      "zones": {
+        "green": 0.598715,
+        "yellow": 0.334458,
+        "red": 0.0668273,
+        "max_exceptions": 16
+      },
+      "in_mcs": false
+    },
+    "EWMA-N": {
+      "violations": 121,
+      "rate": 0.0186901,
+      "p_pof": 3.58849e-10,
+      "p_ind": 0.107901,
+      "p_cc": 7.93342e-10,
+      "status": "FAIL: POF, CC",
+      "tick_loss": 0.000331682,
+      "mean_var": 0.0217001,
+      "zones": {
+        "green": 0.430683,
+        "yellow": 0.538153,
+        "red": 0.0311647,
+        "max_exceptions": 12
+      },
+      "in_mcs": false
+    },
+    "GARCH-N": {
+      "violations": 102,
+      "rate": 0.0157553,
+      "p_pof": 1.75881e-05,
+      "p_ind": 0.105231,
+      "p_cc": 2.67422e-05,
+      "status": "FAIL: POF, CC",
+      "tick_loss": 0.000316621,
+      "mean_var": 0.022229,
+      "zones": {
+        "green": 0.533655,
+        "yellow": 0.466024,
+        "red": 0.000321285,
+        "max_exceptions": 10
+      },
+      "in_mcs": true
+    },
+    "GARCH-t": {
+      "violations": 79,
+      "rate": 0.0122027,
+      "p_pof": 0.085106,
+      "p_ind": 0.0184653,
+      "p_cc": 0.0141502,
+      "status": "FAIL: IND, CC",
+      "tick_loss": 0.000316743,
+      "mean_var": 0.0236079,
+      "zones": {
+        "green": 0.750522,
+        "yellow": 0.249478,
+        "red": 0.0,
+        "max_exceptions": 9
+      },
+      "es_t": 3.00488,
+      "es_p": 0.00357162,
+      "in_mcs": true
+    },
+    "GJR-GARCH-t": {
+      "violations": 75,
+      "rate": 0.0115848,
+      "p_pof": 0.211261,
+      "p_ind": 0.0694234,
+      "p_cc": 0.0880648,
+      "status": "PASS",
+      "tick_loss": 0.000302009,
+      "mean_var": 0.023432,
+      "zones": {
+        "green": 0.806586,
+        "yellow": 0.193414,
+        "red": 0.0,
+        "max_exceptions": 8
+      },
+      "es_t": 1.97652,
+      "es_p": 0.0518223,
+      "in_mcs": true
+    },
+    "EGARCH-t": {
+      "violations": 79,
+      "rate": 0.0122027,
+      "p_pof": 0.085106,
+      "p_ind": 0.0184653,
+      "p_cc": 0.0141502,
+      "status": "FAIL: IND, CC",
+      "tick_loss": 0.000305187,
+      "mean_var": 0.0230489,
+      "zones": {
+        "green": 0.765783,
+        "yellow": 0.234217,
+        "red": 0.0,
+        "max_exceptions": 9
+      },
+      "es_t": 2.48055,
+      "es_p": 0.0152715,
+      "in_mcs": true
+    },
+    "FHS-EWMA": {
+      "violations": 83,
+      "rate": 0.0128205,
+      "p_pof": 0.0288481,
+      "p_ind": 0.0263196,
+      "p_cc": 0.00778328,
+      "status": "FAIL: POF, IND, CC",
+      "tick_loss": 0.000320899,
+      "mean_var": 0.0251941,
+      "zones": {
+        "green": 0.844498,
+        "yellow": 0.155502,
+        "red": 0.0,
+        "max_exceptions": 7
+      },
+      "in_mcs": true
+    },
+    "FHS-GARCH": {
+      "violations": 83,
+      "rate": 0.0128205,
+      "p_pof": 0.0288481,
+      "p_ind": 0.0263196,
+      "p_cc": 0.00778328,
+      "status": "FAIL: POF, IND, CC",
+      "tick_loss": 0.00031318,
+      "mean_var": 0.0235381,
+      "zones": {
+        "green": 0.724659,
+        "yellow": 0.275341,
+        "red": 0.0,
+        "max_exceptions": 9
+      },
+      "es_t": 0.218372,
+      "es_p": 0.827682,
+      "in_mcs": true
+    },
+    "FHS-GJR": {
+      "violations": 70,
+      "rate": 0.0108125,
+      "p_pof": 0.516659,
+      "p_ind": 0.0476075,
+      "p_cc": 0.11393,
+      "status": "FAIL: IND",
+      "tick_loss": 0.000301043,
+      "mean_var": 0.023555,
+      "zones": {
+        "green": 0.813976,
+        "yellow": 0.186024,
+        "red": 0.0,
+        "max_exceptions": 8
+      },
+      "es_t": 0.177532,
+      "es_p": 0.859611,
+      "in_mcs": true
+    },
+    "GJR-EVT": {
+      "violations": 62,
+      "rate": 0.00957677,
+      "p_pof": 0.730331,
+      "p_ind": 0.0239517,
+      "p_cc": 0.0736474,
+      "status": "FAIL: IND",
+      "tick_loss": 0.00030252,
+      "mean_var": 0.0244454,
+      "zones": {
+        "green": 0.887711,
+        "yellow": 0.112289,
+        "red": 0.0,
+        "max_exceptions": 8
+      },
+      "es_t": 0.632454,
+      "es_p": 0.529454,
+      "in_mcs": true
+    }
+  },
+  "periods": {
+    "2001-2006": {
+      "days": 1507,
+      "rate": {
+        "HS": 0.00995355,
+        "EWMA-N": 0.00530856,
+        "GARCH-N": 0.00464499,
+        "GARCH-t": 0.00398142,
+        "GJR-GARCH-t": 0.00398142,
+        "EGARCH-t": 0.00398142,
+        "FHS-EWMA": 0.013935,
+        "FHS-GARCH": 0.00530856,
+        "FHS-GJR": 0.00530856,
+        "GJR-EVT": 0.00398142
+      }
+    },
+    "2007-2009": {
+      "days": 756,
+      "rate": {
+        "HS": 0.0304233,
+        "EWMA-N": 0.0238095,
+        "GARCH-N": 0.0224868,
+        "GARCH-t": 0.0145503,
+        "GJR-GARCH-t": 0.0145503,
+        "EGARCH-t": 0.0185185,
+        "FHS-EWMA": 0.0132275,
+        "FHS-GARCH": 0.021164,
+        "FHS-GJR": 0.0145503,
+        "GJR-EVT": 0.0132275
+      }
+    },
+    "2010-2019": {
+      "days": 2516,
+      "rate": {
+        "HS": 0.013911,
+        "EWMA-N": 0.022655,
+        "GARCH-N": 0.018283,
+        "GARCH-t": 0.0147059,
+        "GJR-GARCH-t": 0.0123211,
+        "EGARCH-t": 0.013911,
+        "FHS-EWMA": 0.0127186,
+        "FHS-GARCH": 0.0147059,
+        "FHS-GJR": 0.0119237,
+        "GJR-EVT": 0.0107313
+      }
+    },
+    "2020": {
+      "days": 253,
+      "rate": {
+        "HS": 0.027668,
+        "EWMA-N": 0.0434783,
+        "GARCH-N": 0.0316206,
+        "GARCH-t": 0.0316206,
+        "GJR-GARCH-t": 0.027668,
+        "EGARCH-t": 0.0316206,
+        "FHS-EWMA": 0.0118577,
+        "FHS-GARCH": 0.0316206,
+        "FHS-GJR": 0.027668,
+        "GJR-EVT": 0.027668
+      }
+    },
+    "2021-2026": {
+      "days": 1442,
+      "rate": {
+        "HS": 0.0152566,
+        "EWMA-N": 0.018724,
+        "GARCH-N": 0.0166436,
+        "GARCH-t": 0.0117892,
+        "GJR-GARCH-t": 0.0138696,
+        "EGARCH-t": 0.0110957,
+        "FHS-EWMA": 0.0117892,
+        "FHS-GARCH": 0.00970874,
+        "FHS-GJR": 0.00970874,
+        "GJR-EVT": 0.00832178
+      }
+    }
+  },
+  "in_sample_shortcut": {
+    "GARCH-N": {
+      "violations": 101,
+      "rate": 0.0156009,
+      "p_pof": 2.83814e-05,
+      "p_cc": 4.0129e-05,
+      "status": "FAIL: POF, CC"
+    },
+    "GARCH-t": {
+      "violations": 74,
+      "rate": 0.0114303,
+      "p_pof": 0.258105,
+      "p_cc": 0.0215275,
+      "status": "FAIL: IND, CC"
+    },
+    "GJR-GARCH-t": {
+      "violations": 74,
+      "rate": 0.0114303,
+      "p_pof": 0.258105,
+      "p_cc": 0.0956102,
+      "status": "PASS"
+    },
+    "EGARCH-t": {
+      "violations": 78,
+      "rate": 0.0120482,
+      "p_pof": 0.108573,
+      "p_cc": 0.0629753,
+      "status": "PASS"
+    },
+    "FHS-GARCH": {
+      "violations": 64,
+      "rate": 0.0098857,
+      "p_pof": 0.926215,
+      "p_cc": 0.0150581,
+      "status": "FAIL: IND, CC"
+    },
+    "FHS-GJR": {
+      "violations": 65,
+      "rate": 0.0100402,
+      "p_pof": 0.974109,
+      "p_cc": 0.0986619,
+      "status": "FAIL: IND"
+    },
+    "GJR-EVT": {
+      "violations": 56,
+      "rate": 0.00864998,
+      "p_pof": 0.263777,
+      "p_cc": 0.137175,
+      "status": "PASS"
+    }
+  },
+  "component_var": {
+    "full": {
+      "var": 0.0245446,
+      "share": {
+        "SPY": 0.431593,
+        "QQQ": 0.488809,
+        "EFA": 0.0953866,
+        "TLT": -0.0157892
+      }
+    },
+    "stress": {
+      "var": 0.04402,
+      "share": {
+        "SPY": 0.487976,
+        "QQQ": 0.42538,
+        "EFA": 0.106892,
+        "TLT": -0.0202474
+      }
+    },
+    "stress_window": [
+      "2008-01-02",
+      "2009-06-30"
+    ],
+    "stress_days": 377
+  }
+}
