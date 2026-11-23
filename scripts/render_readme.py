@@ -34,6 +34,8 @@ def headline(m: dict) -> str:
         and all(mod[k]["es_t"] > 0 and k.endswith("-t") for k in es_reject),
         "every semi-parametric ES passes": all(k in es_ok for k in ("FHS-GARCH", "FHS-GJR", "GJR-EVT")),
         "historical simulation spends time in the red zone": mod["HS"]["zones"]["red"] > 0.01,
+        "the Dynamic Quantile test rejects every model": all(mod[k]["p_dq"] < 0.05 for k in ORDER),
+        "every ES model is in the FZ0 confidence set": all(mod[k]["in_mcs_fz0"] for k in ORDER if "in_mcs_fz0" in mod[k]),
     }
     failed = [k for k, ok in checks.items() if not ok]
     if failed:
@@ -43,8 +45,11 @@ def headline(m: dict) -> str:
     es_ts = ", ".join(f"{mod[k]['es_t']:.1f}" for k in es_reject)
     return (
         f"**Answer, over {s['n_days']} out-of-sample days from {s['first_day'][:4]} to {s['last_day'][:4]}: "
-        f"one of ten.** Only {w} passes all three Christoffersen tests ({mod[w]['violations']} violations "
-        f"against {s['expected_violations']:.0f} expected). Historical simulation, the simplest "
+        f"one of ten, and none under a stricter timing test.** Only {w} passes all three Christoffersen tests "
+        f"({mod[w]['violations']} violations against {s['expected_violations']:.0f} expected). The Dynamic Quantile "
+        f"test of Engle and Manganelli, which asks whether a violation could be predicted from the last four days and "
+        f"the VaR level rather than from yesterday alone, rejects all ten at 5%, {w} included (p = "
+        f"{mod[w]['p_dq']:.3f}). Historical simulation, the simplest "
         f"method, has {mod['HS']['violations']} violations and spends "
         f"{mod['HS']['zones']['red']:.0%} of days in the Basel red zone. Models that take the tail from past "
         f"residuals (FHS-GJR, GJR-EVT) get the number of violations right but not their timing: the "
@@ -67,22 +72,29 @@ def results(m: dict) -> str:
            f"from {s['data_first']}. Annual volatility {s['ann_vol']:.1%}, skewness {s['skew']:.2f}, excess "
            f"kurtosis {s['excess_kurtosis']:.1f}.", "",
            "**Out-of-sample backtest, 99% one day VaR**", "",
-           "| Model | Violations | Rate | Coverage p | Independence p | Joint p | Verdict | In 90% MCS | "
-           "Days green / yellow / red |", "|---|---|---|---|---|---|---|---|---|"]
+           "| Model | Violations | Rate | Coverage p | Independence p | Joint p | Verdict | DQ p | In 90% MCS | "
+           "Days green / yellow / red |", "|---|---|---|---|---|---|---|---|---|---|"]
     for k in ORDER:
         r = mod[k]
         z = r["zones"]
         out.append(f"| {k} | {r['violations']} | {r['rate']:.2%} | {p(r['p_pof'])} | {p(r['p_ind'])} | "
                    f"{p(r['p_cc'])} | {'**Pass**' if r['status'] == 'PASS' else r['status'].replace('FAIL: ', 'Fails ')} | "
-                   f"{'yes' if r['in_mcs'] else 'no'} | {z['green']:.0%} / {z['yellow']:.0%} / {z['red']:.0%} |")
+                   f"{p(r['p_dq'])} | {'yes' if r['in_mcs'] else 'no'} | {z['green']:.0%} / {z['yellow']:.0%} / {z['red']:.0%} |")
     out += ["", "Coverage is the Kupiec test, independence and joint are Christoffersen's; a p-value below 0.05 "
-            "fails. MCS is the Model Confidence Set on quantile loss. The zones count exceptions in the "
+            "fails; the verdict uses these three. DQ is the Dynamic Quantile test (Engle and Manganelli 2004): a regression of the hit on a constant, four lagged hits and the VaR forecast, chi-squared with 6 degrees of freedom. MCS is the Model Confidence Set on quantile loss. The zones count exceptions in the "
             "previous 250 days: green up to 4, yellow 5 to 9, red 10 or more.", "",
             "**Expected shortfall** (McNeil-Frey test; positive t means losses beyond VaR were larger than "
-            "the model's ES)", "", "| Model | t | p |", "|---|---|---|"]
+            "the model's ES; FZ0 is the joint VaR and ES loss of Patton, Ziegel and Chen, lower is better)", "",
+            "| Model | t | p | FZ0 loss | In 90% MCS on FZ0 |", "|---|---|---|---|---|"]
     for k in ORDER:
         if mod[k].get("es_p") is not None:
-            out.append(f"| {k} | {mod[k]['es_t']:+.2f} | {p(mod[k]['es_p'])} |")
+            out.append(f"| {k} | {mod[k]['es_t']:+.2f} | {p(mod[k]['es_p'])} | {mod[k]['fz0_loss']:.4f} | "
+                       f"{'yes' if mod[k]['in_mcs_fz0'] else 'no'} |")
+    fz = {k: mod[k]["fz0_loss"] for k in ORDER if "fz0_loss" in mod[k]}
+    best = min(fz, key=fz.get)
+    out += ["", f"Expected shortfall has no loss function of its own, but VaR and ES together do (Fissler and Ziegel "
+            f"2016), so the FZ0 loss ranks the models on both at once. {best} has the lowest, but the Model Confidence "
+            f"Set keeps all {len(fz)}: on joint VaR and ES accuracy the data cannot separate them."]
     out += ["", "**The in-sample shortcut**: each model fitted once on the whole sample, then scored on the same "
             "days", "", "| Model | Violations, out of sample | Violations, shortcut | Verdict, out of sample | "
             "Verdict, shortcut |", "|---|---|---|---|---|"]

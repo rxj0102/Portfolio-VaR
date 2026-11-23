@@ -4,6 +4,8 @@ metrics.py — VaR backtesting and model evaluation metrics.
 Implements:
   christoffersen_test  : Christoffersen (1998) LR framework (POF, IND, CC tests)
   mcneil_frey_es_test  : McNeil & Frey (2000) Expected Shortfall specification test
+  dq_test              : Engle & Manganelli (2004) Dynamic Quantile test
+  fz0_loss             : Patton, Ziegel & Chen (2019) joint VaR and ES loss
   model_confidence_set : Hansen, Lunde & Nason (2011) MCS procedure
   run_backtest         : orchestrates the full backtest pipeline on a model suite
 
@@ -72,6 +74,51 @@ def _tick_loss(returns: np.ndarray, var: np.ndarray, alpha: float) -> np.ndarray
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
+def dq_test(returns: pd.Series, var_series: pd.Series, alpha: float = 0.01, lags: int = 4) -> dict:
+    """Dynamic Quantile test of Engle and Manganelli (2004).
+
+    Regress Hit_t = I_t − α on a constant, the last ``lags`` values of Hit and
+    the VaR forecast for day t. Under a correct model every coefficient is
+    zero, because a hit must be unpredictable from anything known the day
+    before, not only from yesterday's hit (which is all Christoffersen's
+    independence test looks at).
+
+      DQ = β̂' X'X β̂ / (α (1 − α))  ~  χ²(lags + 2)
+
+    Returns dict with keys: dq, p_val, n.
+    """
+    idx = returns.index.intersection(var_series.dropna().index)
+    r = returns.reindex(idx).to_numpy(float)
+    v = var_series.reindex(idx).to_numpy(float)
+    hit = (r < -v).astype(float) - alpha
+    T = len(hit)
+    if T <= lags + 2:
+        return {"dq": np.nan, "p_val": np.nan, "n": T}
+    y = hit[lags:]
+    X = np.column_stack([np.ones(T - lags)] + [hit[lags - j:T - j] for j in range(1, lags + 1)] + [v[lags:]])
+    beta, *_ = np.linalg.lstsq(X, y, rcond=None)
+    dq = float(beta @ (X.T @ X) @ beta / (alpha * (1 - alpha)))
+    return {"dq": dq, "p_val": float(chi2.sf(dq, lags + 2)), "n": int(len(y))}
+
+
+def fz0_loss(returns: np.ndarray, var: np.ndarray, es: np.ndarray, alpha: float) -> np.ndarray:
+    """FZ0 loss of Patton, Ziegel and Chen (2019) for a joint (VaR, ES) forecast.
+
+    Expected shortfall alone has no proper scoring rule, but the pair (VaR, ES)
+    does (Fissler and Ziegel 2016). With v = −VaR and e = −ES in return units
+    (so e ≤ v < 0):
+
+      L = −1{Y ≤ v} (v − Y) / (α e) + v / e + log(−e) − 1
+
+    Lower is better. Used in the Model Confidence Set to rank models on VaR
+    and ES together, where the tick loss ranks them on VaR only.
+    """
+    v, e = -np.asarray(var, float), -np.asarray(es, float)
+    y = np.asarray(returns, float)
+    hit = (y <= v).astype(float)
+    return -hit * (v - y) / (alpha * e) + v / e + np.log(-e) - 1.0
+
 
 def christoffersen_test(
     returns: pd.Series,

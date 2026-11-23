@@ -35,6 +35,7 @@
         "red": 0.0668273,
         "max_exceptions": 16
       },
+      "p_dq": 3.17449e-71,
       "in_mcs": false
     },
     "EWMA-N": {
@@ -52,6 +53,7 @@
         "red": 0.0311647,
         "max_exceptions": 12
       },
+      "p_dq": 1.3851e-27,
       "in_mcs": false
     },
     "GARCH-N": {
@@ -69,6 +71,7 @@
         "red": 0.000321285,
         "max_exceptions": 10
       },
+      "p_dq": 7.4908e-11,
       "in_mcs": true
     },
     "GARCH-t": {
@@ -86,9 +89,12 @@
         "red": 0.0,
         "max_exceptions": 9
       },
+      "p_dq": 5.78755e-08,
       "es_t": 3.00488,
       "es_p": 0.00357162,
-      "in_mcs": true
+      "in_mcs": true,
+      "fz0_loss": -3.50402,
+      "in_mcs_fz0": true
     },
     "GJR-GARCH-t": {
       "violations": 75,
@@ -105,9 +111,12 @@
         "red": 0.0,
         "max_exceptions": 8
       },
+      "p_dq": 0.00975705,
       "es_t": 1.97652,
       "es_p": 0.0518223,
-      "in_mcs": true
+      "in_mcs": true,
+      "fz0_loss": -3.54632,
+      "in_mcs_fz0": true
     },
     "EGARCH-t": {
       "violations": 79,
@@ -124,9 +133,12 @@
         "red": 0.0,
         "max_exceptions": 9
       },
+      "p_dq": 4.61368e-06,
       "es_t": 2.48055,
       "es_p": 0.0152715,
-      "in_mcs": true
+      "in_mcs": true,
+      "fz0_loss": -3.52187,
+      "in_mcs_fz0": true
     },
     "FHS-EWMA": {
       "violations": 83,
@@ -143,6 +155,7 @@
         "red": 0.0,
         "max_exceptions": 7
       },
+      "p_dq": 5.66208e-08,
       "in_mcs": true
     },
     "FHS-GARCH": {
@@ -160,9 +173,12 @@
         "red": 0.0,
         "max_exceptions": 9
       },
+      "p_dq": 9.30066e-09,
       "es_t": 0.218372,
       "es_p": 0.827682,
-      "in_mcs": true
+      "in_mcs": true,
+      "fz0_loss": -3.52456,
+      "in_mcs_fz0": true
     },
     "FHS-GJR": {
       "violations": 70,
@@ -179,9 +195,12 @@
         "red": 0.0,
         "max_exceptions": 8
       },
+      "p_dq": 0.0104442,
       "es_t": 0.177532,
       "es_p": 0.859611,
-      "in_mcs": true
+      "in_mcs": true,
+      "fz0_loss": -3.55638,
+      "in_mcs_fz0": true
     },
     "GJR-EVT": {
       "violations": 62,
@@ -198,9 +217,12 @@
         "red": 0.0,
         "max_exceptions": 8
       },
+      "p_dq": 0.0184128,
       "es_t": 0.632454,
       "es_p": 0.529454,
-      "in_mcs": true
+      "in_mcs": true,
+      "fz0_loss": -3.55602,
+      "in_mcs_fz0": true
     }
   },
   "periods": {
