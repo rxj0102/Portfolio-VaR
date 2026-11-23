@@ -238,7 +238,8 @@ def mcneil_frey_es_test(
     On VaR exceedance days (r_t < −VaR_t), tests whether the ES is correctly
     specified via H₀: E[−r_t − ES_t | exceed] = 0.
 
-    Exceedance residuals: e_t = −r_t − ES_t  on days where r_t < −VaR_t.
+    Exceedance residuals: e_t = (−r_t − ES_t) / VaR_t  on days where r_t < −VaR_t,
+    standardised as in McNeil and Frey (VaR_t is proportional to each model's volatility).
     Under correct specification: E[e_t] = 0.
     Test statistic: t = ē / (s_e / √n_exceed)  ~  t(n_exceed − 1).
 
@@ -278,8 +279,12 @@ def mcneil_frey_es_test(
     if n_exceed < 2:
         return {"n_exceed": n_exceed, "t_stat": np.nan, "p_val": np.nan}
 
-    # Exceedance residuals: positive when actual loss > ES forecast
-    e = -r[exceed_mask] - es[exceed_mask]
+    # Exceedance residuals: positive when actual loss > ES forecast. McNeil and Frey
+    # standardise them by the day's volatility so that crisis days, whose residuals are
+    # large in return units, do not dominate the test. Every model here sets VaR and ES as a
+    # fixed multiple of its volatility forecast, so dividing by VaR_t does the same up to a
+    # constant, which a test of mean zero does not see.
+    e = (-r[exceed_mask] - es[exceed_mask]) / v[exceed_mask]
     t_stat, p_val = stats.ttest_1samp(e.values, popmean=0.0)
 
     return {
