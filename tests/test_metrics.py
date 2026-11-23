@@ -290,3 +290,34 @@ class TestCircularBlockBootstrap:
         iid = np.mean([ac1(x[rng.integers(0, T, T)]) for _ in range(20)])
         assert block > 0.6
         assert abs(iid) < 0.1
+
+
+def test_dq_test_accepts_iid_hits_and_rejects_clustered_ones():
+    import numpy as np
+    import pandas as pd
+    from src.metrics import dq_test
+    rng = np.random.default_rng(1)
+    n, a = 20000, 0.01
+    r = pd.Series(rng.standard_normal(n))
+    v = pd.Series(np.full(n, 2.3263478740408408))  # true 99% quantile
+    assert dq_test(r, v, a)["p_val"] > 0.01
+    # clusters: after a hit, the next three days are hits too
+    r2 = r.copy()
+    hits = np.flatnonzero(r.to_numpy() < -v.iloc[0])
+    for h in hits:
+        r2.iloc[h + 1:h + 4] = -3.0
+    assert dq_test(r2, v, a)["p_val"] < 1e-6
+
+
+def test_fz0_loss_prefers_the_true_var_and_es():
+    import numpy as np
+    from scipy.stats import norm
+    from src.metrics import fz0_loss
+    rng = np.random.default_rng(2)
+    y = rng.standard_normal(200000)
+    a = 0.025
+    q = -norm.ppf(a)
+    es = norm.pdf(norm.ppf(a)) / a
+    true = fz0_loss(y, np.full_like(y, q), np.full_like(y, es), a).mean()
+    for f in (0.8, 1.25):
+        assert fz0_loss(y, np.full_like(y, q * f), np.full_like(y, es * f), a).mean() > true

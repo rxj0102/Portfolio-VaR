@@ -93,6 +93,8 @@ def main() -> None:
                "status": metrics.backtest_status(c["p_POF"], c["p_IND"], c["p_CC"]),
                "tick_loss": float(metrics._tick_loss(ret.to_numpy(), var[m].to_numpy(), cfg.alpha).mean()),
                "mean_var": float(var[m].mean()), "zones": wf.basel_zones(hits[m])}
+        dq = metrics.dq_test(ret, var[m], cfg.alpha)
+        row["p_dq"] = float(dq["p_val"])
         if m in wf.ES_MODELS:
             e = metrics.mcneil_frey_es_test(ret, var[m], es[m])
             row["es_t"], row["es_p"] = float(e["t_stat"]), float(e["p_val"])
@@ -102,6 +104,13 @@ def main() -> None:
     mcs = metrics.model_confidence_set(loss, alpha=0.10, B=1000)
     for m in wf.MODELS:
         models[m]["in_mcs"] = bool(str(mcs.loc[m, "in_MCS"]).strip() != "")
+    # Joint VaR and ES ranking: the same MCS on the FZ0 loss, for the models with an ES forecast
+    fz = pd.DataFrame({m: metrics.fz0_loss(ret.to_numpy(), var[m].to_numpy(), es[m].to_numpy(), cfg.alpha)
+                       for m in wf.ES_MODELS}, index=ret.index)
+    mcs_fz = metrics.model_confidence_set(fz, alpha=0.10, B=1000)
+    for m in wf.ES_MODELS:
+        models[m]["fz0_loss"] = float(fz[m].mean())
+        models[m]["in_mcs_fz0"] = bool(str(mcs_fz.loc[m, "in_MCS"]).strip() != "")
 
     periods = {lab: {"days": int(len(ret.loc[a:b])),
                      "rate": {m: float(hits[m].loc[a:b].mean()) for m in wf.MODELS}} for lab, a, b in PERIODS}
